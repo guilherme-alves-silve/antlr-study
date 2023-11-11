@@ -1,0 +1,25 @@
+if 10 < 26
+print 7
+else
+print 10
+
+if 2 < 3
+print 8
+
+if 4 < 3
+print 1
+else
+print 2
+
+if 2 > 3
+print 11
+
+print 9
+
+if 1 < 10
+print 1
+
+if 1 > 10
+print 5
+else
+print 10
