@@ -1,0 +1,6 @@
+# Linux
+antlr4 -Dlanguage=Python3 -no-listener -visitor Expr.g
+
+# Windows
+CLASSPATH=.;%ANTLR4_PATH%\antlr.jar
+antlr4.bat -Dlanguage=Python3 -no-listener -visitor Expr.g

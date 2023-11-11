@@ -1,0 +1,15 @@
+# one single line
+
+input_stream = InputStream(input("? "))
+
+# stdin
+
+input_stream = StdinStream()
+
+# a file passed as a parameter
+
+input_stream = FileStream(sys.argv[1])
+
+# files with accents
+
+input_stream = FileStream(sys.argv[1], encoding="utf-8")
