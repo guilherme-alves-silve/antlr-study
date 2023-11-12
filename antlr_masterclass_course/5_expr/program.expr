@@ -9,7 +9,7 @@ write 8
 iff 4 < 3
 write 1
 otherwise
-write 2
+write 2*2
 
 iff 2 > 3
 write 11
@@ -17,7 +17,7 @@ write 11
 write 9
 
 iff 1 < 10
-write 1
+write 1/2
 
 iff 1 > 10
 write 5
