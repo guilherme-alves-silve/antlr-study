@@ -22,8 +22,9 @@ How to create programming languages and interpreters from scratch
     - antlr_masterclass_course/3_expr/
   - Interpreter with Condition Recognition
     - antlr_masterclass_course/4_expr/
-  - Interpreters with While
     - antlr_masterclass_course/5_expr/
+  - Interpreters with While
+    - antlr_masterclass_course/6_expr/
   - Final Programming Language
     - antlr_masterclass_course/6_expr/
 - [ ] [Build SQL parser using ANTLR4](https://github.com/codersasi/pocketsDB)

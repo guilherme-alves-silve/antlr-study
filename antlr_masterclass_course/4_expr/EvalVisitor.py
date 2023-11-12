@@ -17,7 +17,7 @@ class EvalVisitor(ExprVisitor):
         children = list(ctx.getChildren())
         if self.visit(children[1]) == 1:  # 'if' expr action+
             self.visit(ctx.action(0))  # ctx.action(0) == children[2]
-        elif len(children) > 3:  # ('else' action+)?
+        elif len(children) > 3 and 'else' == ctx.getChild(3).getText():  # ('else' action+)?
             self.visit(ctx.action(1))
 
     def visitGt(self, ctx: ExprParser.GtContext):
