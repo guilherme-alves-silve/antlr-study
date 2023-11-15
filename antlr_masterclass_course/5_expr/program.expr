@@ -1,3 +1,8 @@
+iff 1 < 1
+write 7
+otherwise
+write 777
+
 iff 10 < 26
 write 7
 otherwise
@@ -33,11 +38,15 @@ x := 15
 y := 10
 z := 5
 
-if 5 == 5
+iff 5 == 5
 write x
 
-if x != y
+iff x != y
 next y
 
-if x <> z
-write x + z
+write y
+
+iff x <> z
+write z
+
+write x + y + z

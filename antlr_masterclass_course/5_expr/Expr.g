@@ -4,8 +4,8 @@ root: action+ EOF;
 
 action: 'iff' expr action ('otherwise' action)? # Condition
       | NAME ':=' expr                          # Value
-      | 'write' (expr|NAME)                     # Write
-      | 'next' expr                             # Next
+      | 'write' expr                            # Write
+      | 'next' (expr|NAME)                      # Next
       ;
 
 expr: <assoc=right> expr POW expr # Pow
@@ -18,6 +18,7 @@ expr: <assoc=right> expr POW expr # Pow
     | expr GT  expr               # Gt
     | expr LT  expr               # Lt
     | NUM                         # Num
+    | NAME                        # Name
     ;
 
 POW:  ('^'|'**');
