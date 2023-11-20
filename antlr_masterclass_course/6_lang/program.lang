@@ -1,0 +1,20 @@
+a <- 5
+b <- 10
+send a + b
+
+c <- 32 - 7
+send c
+
+d <- 5
+while d > 0
+send d
+d <- d - 1
+break
+
+e <- 0
+while e < 7
+send e
+e <- e + 1
+break
+
+send 7 + 7 - 1
