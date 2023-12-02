@@ -26,7 +26,7 @@ How to create programming languages and interpreters from scratch
   - Interpreters with While
     - antlr_masterclass_course/6_lang/
   - Final Programming Language
-    - antlr_masterclass_course/7_expr/
+    - antlr_masterclass_course/7_bazilio/
 - [ ] [Build SQL parser using ANTLR4](https://github.com/codersasi/pocketsDB)
   - [Build SQL parser using ANTLR4 -Part1](https://medium.com/@sasidharc/build-sql-parser-using-antlr4-part1-2044916a8406)
   - [Build SQL parser using ANTLR4 -Part2](https://medium.com/@sasidharc/build-sql-parser-using-antlr4-part2-1f8cdb011721)
