@@ -28,7 +28,7 @@ class Visitor(BazilioVisitor):
     def __init__(self, entry_proc='Main', entry_params=[]):
         self.entry_proc = entry_proc
         self.entry_param = entry_params
-        self.procs = []
+        self.procs = dict()
         self.stack = []
         # Fundamental list of the music score
         self.score = []
@@ -46,6 +46,15 @@ class Visitor(BazilioVisitor):
     def visitRoot(self, ctx: BazilioParser.RootContext):
         for ch in ctx.getChildren():
             self.visit(ch)
+
+    def proc(self, name: str, params_values: list):
+        # Error handling
+        if name not in self.procs:
+            raise BazilioException(f'The proc "{name}" doesn\'t exists.')
+
+        if len(self.procs[name].params) != len(params_values):
+            raise BazilioException(f'In "{name}" proc was waiting {len(self.procs[name].params)} '
+                                   f'param(s), but {len(params_values)} was given.')
 
 
 
