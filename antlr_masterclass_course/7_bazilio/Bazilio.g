@@ -12,9 +12,9 @@ instruction: (assignment | input | output)
 assignment: VAR ASSIGN expr;
 input: INPUT VAR;
 output: OUTPUT expr+;
-reproduction: REPROD expr;
 conditional: 'if' expr LB instructions RB ('elif' expr LB instructions RB)* ('else' LB instructions RB)?;
 while: 'while' expr LB instructions RB;
+reproduction: REPROD expr;
 proc: PROCEDURE expr*;
 addinglist: VAR ADDL expr;
 cutlist: CUTL query;

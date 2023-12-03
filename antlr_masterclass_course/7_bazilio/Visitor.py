@@ -43,18 +43,118 @@ class Visitor(BazilioVisitor):
             "A7": 49, "B7": 50, "C8": 51
         }
 
-    def visitRoot(self, ctx: BazilioParser.RootContext):
-        for ch in ctx.getChildren():
-            self.visit(ch)
-
-    def proc(self, name: str, params_values: list):
+    def exec_proc(self, name: str, params_values: list):
         # Error handling
         if name not in self.procs:
             raise BazilioException(f'The proc "{name}" doesn\'t exists.')
 
         if len(self.procs[name].params) != len(params_values):
-            raise BazilioException(f'In "{name}" proc was waiting {len(self.procs[name].params)} '
+            raise BazilioException(f'The proc "{name}" was waiting for {len(self.procs[name].params)} '
                                    f'param(s), but {len(params_values)} was given.')
 
+        new_vars = defaultdict(lambda: 0)
+        for param, value in zip(self.procs[name].params, params_values):
+            new_vars[param] = value
 
+        # We push the arguments needed in procedure
+        self.stack.append(new_vars)
+        # We execute the procedure
+        self.visit(self.procs[name].instructions)
+        # We remove from the stack the executed procedure
+        self.stack.pop()
 
+    def visitRoot(self, ctx: BazilioParser.RootContext):
+        for procdef in ctx.getChildren():
+            self.visit(procdef)
+
+    def visitInstructions(self, ctx: BazilioParser.InstructionsContext):
+        for instruction in ctx.getChildren():
+            self.visit(instruction)
+
+    def visitInstruction(self, ctx: BazilioParser.InstructionContext):
+        return self.visitChildren(ctx)
+
+    def visitAssignment(self, ctx: BazilioParser.AssignmentContext):
+        # assignment: VAR ASSIGN expr;
+        method_vars = self.stack[-1]
+        variable = ctx.VAR().getText()
+        method_vars[variable] = self.visit(ctx.getChild(2))
+
+    def visitInput(self, ctx: BazilioParser.InputContext):
+        # input: INPUT VAR;
+        method_vars = self.stack[-1]
+        variable = ctx.VAR().getText()
+        if variable not in method_vars:
+            raise BazilioException(f'The variable "{variable}" doesn\'t exists.')
+
+        temp = input("<?> x")
+        method_vars[variable] = float(temp) if "." in temp else int(temp)
+
+    def visitOutput(self, ctx: BazilioParser.OutputContext):
+        # output: OUTPUT expr+;
+        chd = list(ctx.getChildren())
+        for expr in chd[1:]:
+            result = self.visit(expr),
+            # TODO Verificar se vai dar certo
+            to_print = (self._str_list(result)
+                        if isinstance(result, list)
+                        else result)
+            if expr != chd[-1]:
+                print(to_print, end=" ")
+            else:
+                print(to_print)
+
+    def visitConditional(self, ctx: BazilioParser.ConditionalContext):
+        """
+        Grammar rule:
+            conditional: 'if' expr LB instructions RB
+                ('elif' expr LB instructions RB)*
+                ('else' LB instructions RB)?;
+        It parses the conditional tree, for example:
+            chd = ['if', 'expr', 'LB', 'inss', 'RB', 'elif', 'expr', 'LB', 'inss', 'RB', 'elif', 'expr', 'LB', 'inss',
+             'RB', 'elif', 'expr', 'LB', 'inss', 'RB', 'else', 'LB', 'inss', 'RB']
+            >>> for i in range(0, len(chd), 5):
+            ...     condition = chd[i:i+5]
+            ...     print(condition)
+            ['if', 'expr', 'LB', 'inss', 'RB']
+            ['elif', 'expr', 'LB', 'inss', 'RB']
+            ['elif', 'expr', 'LB', 'inss', 'RB']
+            ['elif', 'expr', 'LB', 'inss', 'RB']
+            ['else', 'LB', 'inss', 'RB']
+
+        :param ctx:
+        :return:
+        """
+        chd = list(ctx.getChildren())
+        for i in range(0, len(chd), 5):
+            condition = chd[i:i + 5]
+            if (("if" == condition[0].getText()
+                 or "elif" == condition[0].getText())
+                and 1 == self.visit(condition[1])):
+                return self.visit(condition[3])
+            elif "else" == condition[0].getText():
+                return self.visit(condition[2])
+            else:
+                # TODO Verificar se terá problemas
+                raise BazilioException("Invalid condition type")
+
+    def visitWhile(self, ctx: BazilioParser.WhileContext):
+        """
+        Grammar rule:
+            while: 'while' expr LB instructions RB;
+        :param ctx:
+        :return:
+        """
+        chd = list(ctx.getChildren())
+        while 1 == self.visit(chd[1]):
+            self.visit(chd[3])
+
+    def visitReproduction(self, ctx: BazilioParser.ReproductionContext):
+        pass
+
+    def _str_list(self, result) -> str:
+        return (str(result)
+                .replace(",", "")
+                .replace("'", "")
+                .replace("[", "{")
+                .replace("]", "}"))
