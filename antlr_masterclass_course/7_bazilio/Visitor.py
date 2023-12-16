@@ -404,6 +404,8 @@ class Visitor(BazilioVisitor):
         """
         In the Bazilio language, the index starts in the 1, not zero,
         that's why we check if it's equal or below zero.
+        :index int: the index to validate
+        :var_list list: the list to compare the size
         """
         if index <= 0 or index > len(var_list):
             raise BazilioException(f"Invalid list index {index}.")
