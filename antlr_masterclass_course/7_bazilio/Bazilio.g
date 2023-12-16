@@ -1,12 +1,12 @@
 grammar Bazilio;
 
-root: procdef*;
+root: procDef*;
 
-procdef: PROCEDURE VAR* LB instructions RB;
+procDef: PROCEDURE paramsId LB instructions RB;
 instructions: instruction*;
 instruction: (assignment | input | output)
            | (reproduction | conditional | while)
-           | (proc | addinglist | cutlist)
+           | (proc | addingList | cutList)
            ;
 
 assignment: VAR ASSIGN expr;
@@ -15,35 +15,35 @@ output: OUTPUT expr+;
 conditional: 'if' expr LB instructions RB ('elif' expr LB instructions RB)* ('else' LB instructions RB)?;
 while: 'while' expr LB instructions RB;
 reproduction: REPROD expr;
-proc: PROCEDURE expr*;
-addinglist: VAR ADDL expr;
-cutlist: CUTL query;
+proc: PROCEDURE paramsExpr;
+addingList: VAR ADDL expr;
+cutList: CUTL query;
 
-expr: expr POW expr
-    | expr MUL expr
-    | expr DIV expr
-    | expr MOD expr
-    | expr ADD expr
-    | expr SUB expr
-    | expr EQ expr
-    | expr GT expr
-    | expr LT expr
-    | expr GTE expr
-    | expr LTE expr
-    | expr DIF expr
-    | NUM
-    | VAR
-    | STRING
-    | initlist
-    | sizelist
-    | query
-    | NOTE
-    | LP expr RP
+expr: expr POW expr # Pow
+    | expr MUL expr # Mul
+    | expr DIV expr # Div
+    | expr MOD expr # Mod
+    | expr ADD expr # Add
+    | expr SUB expr # Sub
+    | expr EQ expr  # Eq
+    | expr GT expr  # Gt
+    | expr LT expr  # Lt
+    | expr GTE expr # Gte
+    | expr LTE expr # Lte
+    | expr DIF expr # Dif
+    | NUM           # Num
+    | VAR           # Var
+    | STRING        # String
+    | '{' expr* '}' # InitList
+    | SIZELIST VAR  # SizeList
+    | query         # EvalQuery
+    | NOTE          # Note
+    | LP expr RP    # SubExpr
     ;
 
 query: VAR LK expr RK;
-sizelist: SIZELIST VAR;
-initlist: '{' expr* '}';
+paramsId: VAR*;
+paramsExpr: expr*;
 
 ADD: '+';
 SUB: '-';
