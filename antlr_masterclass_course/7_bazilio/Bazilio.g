@@ -17,7 +17,7 @@ while: 'while' expr LB instructions RB;
 reproduction: REPROD expr;
 proc: PROCEDURE paramsExpr;
 addingList: VAR ADDL expr;
-cutList: CUTL query;
+cutList: CUTL VAR LK expr RK;
 
 expr: expr POW expr # Pow
     | expr MUL expr # Mul
@@ -68,7 +68,7 @@ REPROD: '(:)';
 NOTE: [A-G][0-9]*;
 PROCEDURE: [A-Z][a-z0-9]*;
 ADDL: '<<';
-CUTL: '|<';
+CUTL: ('|<'|'8<');
 
 LB: '|:';
 RB: ':|';

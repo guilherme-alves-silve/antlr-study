@@ -1,3 +1,5 @@
+from typing import Any
+
 if __name__ and "." in __name__:
     from .BazilioParser import BazilioParser
     from .BazilioVisitor import BazilioVisitor
@@ -69,7 +71,7 @@ class Visitor(BazilioVisitor):
         """
         method_vars = self.stack[-1]
         var_name = ctx.VAR().getText()
-        self._validate_var_exists(var_name, method_vars)
+        self._get_asserted_var(var_name, method_vars)
         temp = input("<?> x")
         method_vars[var_name] = float(temp) if "." in temp else int(temp)
 
@@ -303,8 +305,7 @@ class Visitor(BazilioVisitor):
     def visitVar(self, ctx: BazilioParser.VarContext):
         var_name = ctx.VAR().getText()
         method_vars = self.stack[-1]
-        self._validate_var_exists(var_name, method_vars)
-        return method_vars[var_name]
+        return self._get_asserted_var(var_name, method_vars)
 
     def visitInitList(self, ctx: BazilioParser.InitListContext):
         """
@@ -323,13 +324,23 @@ class Visitor(BazilioVisitor):
         """
         method_vars = self.stack[-1]
         var_name = ctx.VAR().getText()
-        self._validate_var_exists(var_name, method_vars)
-
-        if not isinstance(method_vars[var_name], list):
-            raise BazilioException(f"The {var_name} must be of type list.")
-
-        size = len(method_vars[var_name])
+        var_list = self._get_asserted_list(var_name, method_vars)
+        size = len(var_list)
         return size
+
+    def visitQuery(self, ctx: BazilioParser.QueryContext):
+        """
+        Grammar rule:
+            query: VAR LK expr RK;
+            LK: '[';
+            RK: ']';
+        :param ctx:
+        :return:
+        """
+        var_name = ctx.VAR().getText()
+        method_vars = self.stack[-1]
+        var_list = self._get_asserted_list(var_name, method_vars)
+        return var_list[self.visit(ctx.expr())]
 
     def visitAddingList(self, ctx: BazilioParser.AddingListContext):
         """
@@ -339,17 +350,27 @@ class Visitor(BazilioVisitor):
         :param ctx:
         :return:
         """
-        pass
+        var_name = ctx.VAR().getText()
+        method_vars = self.stack[-1]
+        var_list = self._get_asserted_list(var_name, method_vars)
+        var_list.append(self.visit(ctx.expr()))
 
     def visitCutList(self, ctx: BazilioParser.CutListContext):
         """
         Grammar rule:
-            cutList: CUTL query;
+            cutList: CUTL VAR LK expr RK;
             CUTL: '|<';
+            LK: '[';
+            RK: ']';
         :param ctx:
         :return:
         """
-        pass
+        var_name = ctx.VAR().getText()
+        method_vars = self.stack[-1]
+        var_list = self._get_asserted_list(var_name, method_vars)
+        index = self.visit(ctx.expr())
+        self._assert_index_list(index, var_list)
+        var_list.pop(index-1)
 
     def exec_proc(self, name: str, params_values: list):
         # Error handling
@@ -379,6 +400,21 @@ class Visitor(BazilioVisitor):
                 .replace("[", "{")
                 .replace("]", "}"))
 
-    def _validate_var_exists(self, var_name: str, method_vars: dict):
+    def _assert_index_list(self, index: int, var_list: list):
+        """
+        In the Bazilio language, the index starts in the 1, not zero,
+        that's why we check if it's equal or below zero.
+        """
+        if index <= 0 or index > len(var_list):
+            raise BazilioException(f"Invalid list index {index}.")
+
+    def _get_asserted_var(self, var_name: str, method_vars: dict) -> Any:
         if var_name not in method_vars:
             raise BazilioException(f'The variable "{var_name}" doesn\'t exists.')
+        return method_vars[var_name]
+
+    def _get_asserted_list(self, var_name: str, method_vars: dict) -> list:
+        var_result = self._get_asserted_var(var_name, method_vars)
+        if not isinstance(var_result, list):
+            raise BazilioException(f"The {var_name} is not a list.")
+        return var_result
