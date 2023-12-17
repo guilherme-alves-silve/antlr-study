@@ -25,6 +25,8 @@ class Process:
 
 class Visitor(BazilioVisitor):
 
+    BOOLEAN_OP = [operator.eq, operator.ne, operator.lt, operator.le, operator.gt, operator.ge]
+
     def __init__(self, entry_proc='Main', entry_params=None):
 
         if entry_params is None:
@@ -412,8 +414,11 @@ class Visitor(BazilioVisitor):
             raise BazilioException(f"The {var_name} is not a list.")
         return var_result
 
-    def _get_safe_note(self, val1: int, val2: int, op: Callable[[int, int], int]):
-        safe_hash_value = (op(val1, val2)) % len(self.notes)
+    def _get_safe_note_or_comp(self, val1: int, val2: int, op: Callable[[int, int], int]):
+        if op in self.BOOLEAN_OP:
+            return int(op(val1, val2))
+
+        safe_hash_value = op(val1, val2) % len(self.notes)
         for note, value in self.notes.items():
             if safe_hash_value == value:
                 return note
@@ -445,22 +450,25 @@ class Visitor(BazilioVisitor):
         if is_left_note and is_right_note:
             val1 = self.notes[left.getText()]
             val2 = self.notes[right.getText()]
-            return self._get_safe_note(val1, val2, op)
+            return self._get_safe_note_or_comp(val1, val2, op)
         # (pure|variable) note OP integer
         elif is_left_note:
             val1 = self.notes[left.getText()]
             val2 = self.visit(ctx.expr(1))
-            return self._get_safe_note(val1, val2, op)
+            return self._get_safe_note_or_comp(val1, val2, op)
         # integer OP (pure|variable) note
         elif is_right_note:
             val1 = self.visit(ctx.expr(0))
             val2 = self.notes[right.getText()]
-            return self._get_safe_note(val1, val2, op)
+            return self._get_safe_note_or_comp(val1, val2, op)
 
         # integer OP integer
         val1 = self.visit(children[0])
         val2 = self.visit(children[2])
-        return op(val1, val2)
+
+        return (op(val1, val2)
+                if op in self.BOOLEAN_OP
+                else int(op(val1, val2)))
 
     @classmethod
     def _str_list(cls, result) -> str:
