@@ -74,8 +74,7 @@ class EvalVisitor(BazilioVisitor):
         """
         method_vars = self.stack[-1]
         var_name = ctx.VAR().getText()
-        self._get_asserted_var(var_name, method_vars)
-        temp = input("<?> x")
+        temp = input(f"<?> {var_name}: ")
         method_vars[var_name] = float(temp) if "." in temp else int(temp)
 
     def visitOutput(self, ctx: BazilioParser.OutputContext):
@@ -443,24 +442,26 @@ class EvalVisitor(BazilioVisitor):
 
         if is_left_var_note:
             left = self.stack[-1][left.getText()]
+            is_left_note = is_left_var_note
 
         if is_right_var_note:
             right = self.stack[-1][right.getText()]
+            is_right_note = is_right_var_note
 
         # (pure|variable) note OP (pure|variable) note
         if is_left_note and is_right_note:
-            val1 = self.notes[left.getText()]
-            val2 = self.notes[right.getText()]
+            val1 = self._get_note(left)
+            val2 = self._get_note(right)
             return self._get_safe_note_or_comp(val1, val2, op)
         # (pure|variable) note OP integer
         elif is_left_note:
-            val1 = self.notes[left.getText()]
+            val1 = self._get_note(left)
             val2 = self.visit(ctx.expr(1))
             return self._get_safe_note_or_comp(val1, val2, op)
         # integer OP (pure|variable) note
         elif is_right_note:
             val1 = self.visit(ctx.expr(0))
-            val2 = self.notes[right.getText()]
+            val2 = self._get_note(right)
             return self._get_safe_note_or_comp(val1, val2, op)
 
         # integer OP integer
@@ -470,6 +471,12 @@ class EvalVisitor(BazilioVisitor):
         return (op(val1, val2)
                 if op in self.BOOLEAN_OP
                 else int(op(val1, val2)))
+
+    def _get_note(self, note) -> int:
+        if hasattr(note, 'getText'):
+            return self.notes[note.getText()]
+
+        return self.notes[note]
 
     def _generate_music(self):
         if not self.score:
