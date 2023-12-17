@@ -21,7 +21,7 @@ class Process:
         self.instructions = instructions
 
 
-class Visitor(BazilioVisitor):
+class EvalVisitor(BazilioVisitor):
 
     BOOLEAN_OP = [operator.eq, operator.ne, operator.lt, operator.le, operator.gt, operator.ge]
 
@@ -31,7 +31,7 @@ class Visitor(BazilioVisitor):
             entry_params = []
 
         self.entry_proc = entry_proc
-        self.entry_param = entry_params
+        self.entry_params = entry_params
         self.procs = dict()
         self.stack = []
         # Fundamental list of the music score
@@ -51,6 +51,7 @@ class Visitor(BazilioVisitor):
         for procDef in ctx.getChildren():
             self.visit(procDef)
 
+        self._exec_proc(self.entry_proc, self.entry_params)
         self._generate_music()
 
     def visitInstructions(self, ctx: BazilioParser.InstructionsContext):
@@ -117,9 +118,6 @@ class Visitor(BazilioVisitor):
                 return self.visit(condition[3])
             elif "else" == condition[0].getText():
                 return self.visit(condition[2])
-            else:
-                # TODO Verificar se terá problemas
-                raise BazilioException("Invalid condition type")
 
     def visitWhile(self, ctx: BazilioParser.WhileContext):
         """
@@ -142,7 +140,10 @@ class Visitor(BazilioVisitor):
             for note_pre in result:
                 note_pre = note_pre[:1] + "'" + note_pre[1:]
                 notes.append(note_pre)
-            self.score.extend(notes)
+        else:
+            note_pre = result[:1] + "'" + result[1:]
+            notes.append(note_pre)
+        self.score.extend(notes)
 
     def visitParamsId(self, ctx: BazilioParser.ParamsIdContext):
         """
@@ -170,7 +171,7 @@ class Visitor(BazilioVisitor):
         name = children[0].getText()
         params_expr = self.visit(children[1])
 
-        self.exec_proc(name, params_expr)
+        self._exec_proc(name, params_expr)
 
     def visitProcDef(self, ctx: BazilioParser.ProcDefContext):
         """
@@ -330,7 +331,7 @@ class Visitor(BazilioVisitor):
         var_name = ctx.VAR().getText()
         method_vars = self.stack[-1]
         var_list = self._get_asserted_list(var_name, method_vars)
-        return var_list[self.visit(ctx.expr())]
+        return var_list[self.visit(ctx.expr())-1]
 
     def visitAddingList(self, ctx: BazilioParser.AddingListContext):
         """
@@ -387,7 +388,7 @@ class Visitor(BazilioVisitor):
         """
         return self.visit(ctx.expr())
 
-    def exec_proc(self, name: str, params_values: list):
+    def _exec_proc(self, name: str, params_values: list):
         # Error handling
         if name not in self.procs:
             raise BazilioException(f'The procedure "{name}"was not defined.')
@@ -471,6 +472,9 @@ class Visitor(BazilioVisitor):
                 else int(op(val1, val2)))
 
     def _generate_music(self):
+        if not self.score:
+            return
+
         absolute_path = os.path.dirname(os.path.abspath(__file__))
         notes = self._notes_to_lilypond_fmt()
 
@@ -486,14 +490,12 @@ class Visitor(BazilioVisitor):
             f.write('}')
 
         os.system("lilypond music.lily")
-        os.system("timidity -Ow -o music.wav music.midi")
+        os.system("timidity -Ow -o music.wav music.mid")
         os.system("ffmpeg -i music.wav -codec:a libmp3lame -qscale:a 2 music.mp3")
 
-    def _notes_to_lilypond_fmt(self) -> list:
+    def _notes_to_lilypond_fmt(self) -> str:
         notes_music_upper = ' '.join(map(str, self.score))
-        notes = notes_music_upper.lower()
-        notes = [note[:1] + "'" + note[1:] for note in notes]
-        return notes
+        return notes_music_upper.lower()
 
     @classmethod
     def _str_list(cls, result) -> str:
@@ -508,8 +510,9 @@ class Visitor(BazilioVisitor):
         """
         In the Bazilio language, the index starts in the 1, not zero,
         that's why we check if it's equal or below zero.
-        :index int: the index to validate
-        :var_list list: the list to compare the size
+
+        :index int: the index to validate.
+        :var_list list: the list to compare the size.
         """
         if index <= 0 or index > len(var_list):
             raise BazilioException(f"Invalid list index {index}.")

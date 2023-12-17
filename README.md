@@ -9,10 +9,11 @@ How to create programming languages and interpreters from scratch
 - [LilyPond](https://lilypond.org/)
 - [FFmpeg](https://ffmpeg.org/)
 - [TiMidity++](https://github.com/starg2/timidity41)
+  - In case of missing timidity.cfg, create this file empty on the install path.
 
 ## Summary
 
-- [ ] [ANTLR Programming Masterclass with Python](https://www.udemy.com/course/antlr-programming-masterclass-with-python)
+- [X] [ANTLR Programming Masterclass with Python](https://www.udemy.com/course/antlr-programming-masterclass-with-python)
   - Course introduction
   - Compiler Fundamentals
   - ANTLR4 and Python3 installation

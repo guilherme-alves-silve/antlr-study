@@ -66,7 +66,7 @@ INPUT: '<?>';
 OUTPUT: '<w>';
 REPROD: ('(:)'|'<:>');
 NOTE: [A-G][0-9]?;
-PROCEDURE: [A-Z][a-z0-9]*;
+PROCEDURE: [A-Z][a-zA-Z0-9]*;
 ADDL: '<<';
 CUTL: ('|<'|'8<');
 

@@ -172,3 +172,8 @@ LangLexer.py
 BazilioParser.py
 BazilioVisitor.py
 BazilioLexer.py
+music.lily
+music.mid
+music.mp3
+music.pdf
+music.wav
