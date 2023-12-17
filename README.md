@@ -6,6 +6,8 @@ How to create programming languages and interpreters from scratch
 
 - [ANTLR4](https://github.com/antlr/antlr4)
 - [Python 3+](https://www.python.org/)
+- [LilyPond](https://lilypond.org/)
+- [FFmpeg](https://ffmpeg.org/)
 
 ## Summary
 

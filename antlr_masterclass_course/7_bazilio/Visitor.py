@@ -1,11 +1,11 @@
-from typing import Any
+import operator
 
-if __name__ and "." in __name__:
-    from .BazilioParser import BazilioParser
-    from .BazilioVisitor import BazilioVisitor
-else:
-    from BazilioParser import BazilioParser
-    from BazilioVisitor import BazilioVisitor
+from typing import Any, Callable
+
+import antlr4
+
+from BazilioParser import BazilioParser
+from BazilioVisitor import BazilioVisitor
 from collections import defaultdict
 
 
@@ -79,8 +79,7 @@ class Visitor(BazilioVisitor):
         # output: OUTPUT expr+;
         children = list(ctx.getChildren())
         for expr in children[1:]:
-            result = self.visit(expr),
-            # TODO Verificar se vai dar certo
+            result = self.visit(expr)
             to_print = (self._str_list(result)
                         if isinstance(result, list)
                         else result)
@@ -199,16 +198,14 @@ class Visitor(BazilioVisitor):
         Grammar rule:
             expr POW expr # Pow
         """
-        children = list(ctx.getChildren())
-        return self.visit(children[0]) ** self.visit(children[2])
+        return self._do_operation(ctx, operator.pow)
 
     def visitMul(self, ctx: BazilioParser.MulContext):
         """
         Grammar rule:
             expr MUL expr # Mul
         """
-        children = list(ctx.getChildren())
-        return self.visit(children[0]) * self.visit(children[2])
+        return self._do_operation(ctx, operator.mul)
 
     def visitDiv(self, ctx: BazilioParser.DivContext):
         """
@@ -226,72 +223,63 @@ class Visitor(BazilioVisitor):
         Grammar rule:
             expr MOD expr # Mod
         """
-        children = list(ctx.getChildren())
-        return self.visit(children[0]) % self.visit(children[2])
+        return self._do_operation(ctx, operator.mod)
 
     def visitAdd(self, ctx: BazilioParser.AddContext):
         """
         Grammar rule:
             expr ADD expr # Add
         """
-        children = list(ctx.getChildren())
-        return self.visit(children[0]) + self.visit(children[2])
+        return self._do_operation(ctx, operator.add)
 
     def visitSub(self, ctx: BazilioParser.SubContext):
         """
         Grammar rule:
             expr SUB expr # Sub
         """
-        children = list(ctx.getChildren())
-        return self.visit(children[0]) - self.visit(children[2])
+        return self._do_operation(ctx, operator.sub)
 
     def visitEq(self, ctx:BazilioParser.EqContext):
         """
         Grammar rule:
             expr EQ expr  # Eq
         """
-        children = list(ctx.getChildren())
-        return int(self.visit(children[0]) == self.visit(children[2]))
+        return self._do_operation(ctx, operator.eq)
 
     def visitGt(self, ctx: BazilioParser.GtContext):
         """
         Grammar rule:
             expr GT expr  # Gt
         """
-        children = list(ctx.getChildren())
-        return int(self.visit(children[0]) > self.visit(children[2]))
+        return self._do_operation(ctx, operator.gt)
 
     def visitLt(self, ctx: BazilioParser.LtContext):
         """
         Grammar rule:
             expr LT expr  # Lt
         """
-        children = list(ctx.getChildren())
-        return int(self.visit(children[0]) < self.visit(children[2]))
+        return self._do_operation(ctx, operator.lt)
 
     def visitGte(self, ctx: BazilioParser.GteContext):
         """
         Grammar rule:
             expr GTE expr # Gte
         """
-        children = list(ctx.getChildren())
-        return int(self.visit(children[0]) >= self.visit(children[2]))
+        return self._do_operation(ctx, operator.ge)
 
     def visitLte(self, ctx: BazilioParser.LteContext):
         """
         Grammar rule:
             expr LTE expr # Lte
         """
-        children = list(ctx.getChildren())
-        return int(self.visit(children[0]) <= self.visit(children[2]))
+        return self._do_operation(ctx, operator.le)
 
     def visitDif(self, ctx: BazilioParser.DifContext):
         """
         Grammar rule:
             expr DIF expr # Dif
         """
-        children = list(ctx.getChildren())
-        return int(self.visit(children[0]) != self.visit(children[2]))
+        return self._do_operation(ctx, operator.ne)
 
     def visitNum(self, ctx: BazilioParser.NumContext):
         """
@@ -372,6 +360,31 @@ class Visitor(BazilioVisitor):
         self._assert_index_list(index, var_list)
         var_list.pop(index-1)
 
+    def visitNote(self, ctx: BazilioParser.NoteContext):
+        """
+        Grammar rule:
+            NOTE: [A-G][0-9]*;
+        :param ctx:
+        :return:
+        """
+        note = ctx.NOTE().getText()
+        if len(note) == 2:
+            return note
+
+        default_note = note + "4"
+        return default_note
+
+    def visitSubExpr(self, ctx: BazilioParser.SubExprContext):
+        """
+        Grammar rule:
+            LP expr RP
+            LP: '(';
+            RP: ')';
+        :param ctx:
+        :return:
+        """
+        return self.visit(ctx.expr())
+
     def exec_proc(self, name: str, params_values: list):
         # Error handling
         if name not in self.procs:
@@ -393,14 +406,72 @@ class Visitor(BazilioVisitor):
         # We remove from the stack the executed procedure
         self.stack.pop()
 
-    def _str_list(self, result) -> str:
+    def _get_asserted_list(self, var_name: str, method_vars: dict) -> list:
+        var_result = self._get_asserted_var(var_name, method_vars)
+        if not isinstance(var_result, list):
+            raise BazilioException(f"The {var_name} is not a list.")
+        return var_result
+
+    def _get_safe_note(self, val1: int, val2: int, op: Callable[[int, int], int]):
+        safe_hash_value = (op(val1, val2)) % len(self.notes)
+        for note, value in self.notes.items():
+            if safe_hash_value == value:
+                return note
+        raise BazilioException("Invalid note type!")
+
+    def _do_operation(self,
+                      ctx: BazilioParser.ExprContext,
+                      op: Callable[[int, int], int]):
+
+        assert hasattr(ctx, 'expr'), f"expr must be present on ctx {ctx} to execute mathematical operation!"
+
+        children = list(ctx.getChildren())
+
+        left = children[0]
+        right = children[2]
+
+        is_left_note = left.getText() in self.notes.keys()
+        is_right_note = right.getText() in self.notes.keys()
+        is_left_var_note = self.stack[-1][left.getText()] in self.notes
+        is_right_var_note = self.stack[-1][right.getText()] in self.notes
+
+        if is_left_var_note:
+            left = self.stack[-1][left.getText()]
+
+        if is_right_var_note:
+            right = self.stack[-1][right.getText()]
+
+        # (pure|variable) note OP (pure|variable) note
+        if is_left_note and is_right_note:
+            val1 = self.notes[left.getText()]
+            val2 = self.notes[right.getText()]
+            return self._get_safe_note(val1, val2, op)
+        # (pure|variable) note OP integer
+        elif is_left_note:
+            val1 = self.notes[left.getText()]
+            val2 = self.visit(ctx.expr(1))
+            return self._get_safe_note(val1, val2, op)
+        # integer OP (pure|variable) note
+        elif is_right_note:
+            val1 = self.visit(ctx.expr(0))
+            val2 = self.notes[right.getText()]
+            return self._get_safe_note(val1, val2, op)
+
+        # integer OP integer
+        val1 = self.visit(children[0])
+        val2 = self.visit(children[2])
+        return op(val1, val2)
+
+    @classmethod
+    def _str_list(cls, result) -> str:
         return (str(result)
                 .replace(",", "")
                 .replace("'", "")
                 .replace("[", "{")
                 .replace("]", "}"))
 
-    def _assert_index_list(self, index: int, var_list: list):
+    @classmethod
+    def _assert_index_list(cls, index: int, var_list: list):
         """
         In the Bazilio language, the index starts in the 1, not zero,
         that's why we check if it's equal or below zero.
@@ -410,13 +481,8 @@ class Visitor(BazilioVisitor):
         if index <= 0 or index > len(var_list):
             raise BazilioException(f"Invalid list index {index}.")
 
-    def _get_asserted_var(self, var_name: str, method_vars: dict) -> Any:
+    @classmethod
+    def _get_asserted_var(cls, var_name: str, method_vars: dict) -> Any:
         if var_name not in method_vars:
             raise BazilioException(f'The variable "{var_name}" doesn\'t exists.')
         return method_vars[var_name]
-
-    def _get_asserted_list(self, var_name: str, method_vars: dict) -> list:
-        var_result = self._get_asserted_var(var_name, method_vars)
-        if not isinstance(var_result, list):
-            raise BazilioException(f"The {var_name} is not a list.")
-        return var_result
