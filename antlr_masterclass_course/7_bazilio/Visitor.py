@@ -1,9 +1,7 @@
+import os
 import operator
 
 from typing import Any, Callable
-
-import antlr4
-
 from BazilioParser import BazilioParser
 from BazilioVisitor import BazilioVisitor
 from collections import defaultdict
@@ -52,6 +50,8 @@ class Visitor(BazilioVisitor):
     def visitRoot(self, ctx: BazilioParser.RootContext):
         for procDef in ctx.getChildren():
             self.visit(procDef)
+
+        self._generate_music()
 
     def visitInstructions(self, ctx: BazilioParser.InstructionsContext):
         for instruction in ctx.getChildren():
@@ -469,6 +469,31 @@ class Visitor(BazilioVisitor):
         return (op(val1, val2)
                 if op in self.BOOLEAN_OP
                 else int(op(val1, val2)))
+
+    def _generate_music(self):
+        absolute_path = os.path.dirname(os.path.abspath(__file__))
+        notes = self._notes_to_lilypond_fmt()
+
+        with open(absolute_path + "./music.lily", "w") as f:
+            f.write('\\version "2.20.0"' + os.linesep)
+            f.write('\\score {' + os.linesep)
+            f.write('\t\\absolute {' + os.linesep)
+            f.write('\t\t\\tempo 4 = 120' + os.linesep)
+            f.write(f'\t\t {notes}' + os.linesep)
+            f.write('\t}' + os.linesep)
+            f.write('\t\\layout { }' + os.linesep)
+            f.write('\t\\midi { }' + os.linesep)
+            f.write('}')
+
+        os.system("lilypond music.lily")
+        os.system("timidity -Ow -o music.wav music.midi")
+        os.system("ffmpeg -i music.wav -codec:a libmp3lame -qscale:a 2 music.mp3")
+
+    def _notes_to_lilypond_fmt(self) -> list:
+        notes_music_upper = ' '.join(map(str, self.score))
+        notes = notes_music_upper.lower()
+        notes = [note[:1] + "'" + note[1:] for note in notes]
+        return notes
 
     @classmethod
     def _str_list(cls, result) -> str:

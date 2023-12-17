@@ -8,6 +8,7 @@ How to create programming languages and interpreters from scratch
 - [Python 3+](https://www.python.org/)
 - [LilyPond](https://lilypond.org/)
 - [FFmpeg](https://ffmpeg.org/)
+- [TiMidity++](https://github.com/starg2/timidity41)
 
 ## Summary
 
