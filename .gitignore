@@ -172,6 +172,10 @@ LangLexer.py
 BazilioParser.py
 BazilioVisitor.py
 BazilioLexer.py
+PocketsParser.py
+PocketsVisitor.py
+PocketsLexer.py
+PocketsListener.py
 music.lily
 music.mid
 music.mp3
